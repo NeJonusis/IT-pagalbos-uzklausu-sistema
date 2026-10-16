@@ -32,12 +32,7 @@ Nekursime mobilios programėlės
 Per 2 savaites kokybiškai nespėsime.
 
 ## Analogų palyginimas
-| Analogas                  | 3 pagrindinės funkcijos                       | Kas naudinga/kas ne
-|---------------------------|-----------------------------------------------|--------------------
-| Jira Service Management   | 1. Užklausų registravimas ir registras.       |Naudinga: Puikus užklausų filtravimas ir būsenų valdymas.
-|                           | 2. Automatizuotas priskyrimas ir SLA sekmis.  |Nenaudinga: Per daug sudėtinga konfigūracija smulkiam verslui.
-|                           | 3. Žinių bazė.                                |
-|---------------------------|-----------------------------------------------|--------------------
-| Freshdesk                 | 1. Bilietų priskyrimas agentams.              |Naudinga: Intuityvus sąsajos valdymas ir aiškūs statusai.
-|                           | 2. Prioritetų nustatymas ir žymės.            |Nenaudinga: Nemokamoje versijoje trūksta lanksčių ataskaitų.
-|                           | 3. Atsakymų šablonai                          |
+| Analogas | 3 pagrindinės funkcijos | Kas naudinga/kas ne |
+|---|---|---|
+| Jira Service Management | 1. Užklausų registravimas ir registras. 2. Automatizuotas priskyrimas ir SLA 3. Žinių bazė. sekmis. | Naudinga: Puikus užklausų filtravimas ir būsenų valdymas. Nenaudinga: Per daug sudėtinga konfigūracija smulkiam verslui. |
+| Freshdesk | 1. Bilietų priskyrimas agentams. 2. Prioritetų nustatymas ir žymės. 3. Atsakymų šablonai |Naudinga: Intuityvus sąsajos valdymas ir aiškūs statusai. Nenaudinga: Nemokamoje versijoje trūksta lanksčių ataskaitų. |
