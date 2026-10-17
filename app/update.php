@@ -12,6 +12,10 @@
         $ticketPriority = $_POST['priority'];
         $ticketDescription = $_POST['description'];
 
+        if (trim($ticketTitle) === '' || trim($ticketPriority) === '' || trim($ticketDescription) === '') {
+            die('Visi laukai privalo būti užpildyti.');
+        }
+
         $stmt = $conn->prepare("UPDATE comments SET TicketID = ? WHERE TicketID = ?");
         $stmt->execute([$ticketID, $ticketID]);
 

@@ -1,6 +1,7 @@
 <?php
+
 session_start();
-#require_once "db.php";
+#require_once "../app/db.php";
 
 // Duomenų masyvai atsitiktiniam parinkimui
 $titles = [
@@ -37,7 +38,7 @@ try {
     // Paruošiame SQL užklausą vieną kartą (užtikrina gerą greitį ir saugumą)
     $stmt = $conn->prepare("INSERT INTO tickets (SubmitterID, Title, Priority, Status, Description, SubmissionTime) VALUES (:sub_id, :title, :priority, :status, :description, NOW())");
 
-    for ($i = 1; $i <= 1000; $i++) {
+    for ($i = 1; $i <= 90000; $i++) {
         // Atsitiktinės reikšmės
         $submitterID = rand(1, 3); // Vartotojo ID nuo 1 iki 3
         $randomTitle = $titles[array_rand($titles)] . ' #' . $i; // Pridedam numerį, kad nebūtų identiški

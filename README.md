@@ -16,8 +16,8 @@ Sistema leidžia darbuotojams registruoti IT problemas, jas spręsti ir stebėti
 
 ## DIEGIMAS IR PALEIDIMAS
 **Atsisiųskite repozitoriją:**
-git clone https://github.com/NeJonusis/IT-pagalbos-uzklausu-sistema.git
-cd it-tickets-system
+`git clone https://github.com/NeJonusis/IT-pagalbos-uzklausu-sistema.git
+cd it-tickets-system`
 
 ## KONFIGŪRACIJA
 

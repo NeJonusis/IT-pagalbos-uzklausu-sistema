@@ -90,6 +90,15 @@
             <span class="badge bg-<?php echo $ticket['Priority'] === 'HIGH' || $ticket['Priority'] === 'CRITICAL' ? 'danger' : ($ticket['Priority'] === 'MEDIUM' ? 'warning' : 'success'); ?>"><?php echo htmlspecialchars($ticket['Priority']); ?></span><br>
             </div>
                 <div class="mb-1 ms-auto text-end">
+
+<!-- Gauti submiterio vardą ir pavardę pagal SubmitterID -->
+<?php
+$stmt = $conn->prepare("SELECT * FROM users WHERE ID = ?");
+$stmt->execute([$ticket['SubmitterID']]);
+$submitter = $stmt->fetch(PDO::FETCH_ASSOC);
+?>
+
+                    <small class="text-muted"><?php echo htmlspecialchars($submitter['FirstName']) . ' ' . htmlspecialchars($submitter['LastName']); ?></small><br>
                     <small class="text-muted"><?php echo htmlspecialchars($ticket['Status']); ?></small><br>
                     <small class="text-muted"><?php echo htmlspecialchars($ticket['SubmissionTime']); ?></small><br>
                 </div>

@@ -15,7 +15,8 @@
         "invalid-username" => "Negalimas simbolio @ naudojimas.",
         "user-exist" => "Šis el. paštas arba vardas jau užimtas.",
         "unauthorized" => "Neautorizuotas prisijungimas.",
-        "unknown" => "Įvyko netikėta klaida."
+        "unknown" => "Įvyko netikėta klaida.",
+        "failed-db-connection" => "Nepavyko prisijungti prie duomenų bazės. Bandykite jungtis vėliau."
     ];
 
 ?>

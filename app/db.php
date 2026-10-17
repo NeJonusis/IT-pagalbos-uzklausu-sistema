@@ -15,7 +15,11 @@
 
     }
     catch(PDOException $e) {
-        die("Nepavyko prisijungti prie DB: " . $e->getMessage());
+        $logMessage = "[" . date("Y-m-d H:i:s") . "] DB prisijungimo klaida: " . $e->getMessage() . PHP_EOL;
+        file_put_contents("logs.txt", $logMessage, FILE_APPEND);
+
+        header("Location: ../public/login.php?err=failed-db-connection");
+        exit();
     }
 
 ?>

@@ -31,6 +31,10 @@
     $filterStatus = isset($_GET['filterStatus']) ? $_GET['filterStatus'] : '';
     $filterPriority = isset($_GET['filterPriority']) ? $_GET['filterPriority'] : '';
 
+    $listLimit = 50;
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    if ($page < 1) $page = 1;
+
 
     // FUNKCIJOS
     function connectError($error) {
@@ -96,56 +100,65 @@
 
 <!-- Užklausų filtravimas -->
 <?php
+$listOffset = ($page - 1) * $listLimit;
+
+$sqlCondition = "";
+$params = [];
+
 // Abu filtrai
 if (!empty($filterStatus) && !empty($filterPriority)) {
     if ($userIsSupport) {
-        $stmtTickets = $conn->prepare("SELECT * FROM tickets WHERE Status = :status AND Priority = :priority AND (SupporterID = :user_id OR SupporterID IS NULL) ORDER BY SubmissionTime DESC");
-        $stmtTickets->execute(['status' => $filterStatus, 'priority' => $filterPriority, 'user_id' => $userId]);
+        $sqlConditions = "WHERE Status = :status AND Priority = :priority AND (SupporterID = :user_id OR SupporterID IS NULL)";
+        $params = ['status' => $filterStatus, 'priority' => $filterPriority, 'user_id' => $userId];
     } else {
-        $stmtTickets = $conn->prepare("SELECT * FROM tickets WHERE SubmitterID = :user_id AND Status = :status AND Priority = :priority ORDER BY SubmissionTime DESC");
-        $stmtTickets->execute(['user_id' => $userId, 'status' => $filterStatus, 'priority' => $filterPriority]);
+        $sqlConditions = "WHERE SubmitterID = :user_id AND Status = :status AND Priority = :priority";
+        $params = ['user_id' => $userId, 'status' => $filterStatus, 'priority' => $filterPriority];
     }
 
 // Tik Statusas
 } elseif (!empty($filterStatus)) {
     if ($userIsSupport) {
-        $stmtTickets = $conn->prepare("SELECT * FROM tickets WHERE Status = :status AND (SupporterID = :user_id OR SupporterID IS NULL) ORDER BY SubmissionTime DESC");
-        $stmtTickets->execute(['status' => $filterStatus, 'user_id' => $userId]);
+        $sqlConditions = "WHERE Status = :status AND (SupporterID = :user_id OR SupporterID IS NULL)";
+        $params = ['status' => $filterStatus, 'user_id' => $userId];
     } else {
-        $stmtTickets = $conn->prepare("SELECT * FROM tickets WHERE SubmitterID = :user_id AND Status = :status ORDER BY SubmissionTime DESC");
-        $stmtTickets->execute(['user_id' => $userId, 'status' => $filterStatus]);
+        $sqlConditions = "WHERE SubmitterID = :user_id AND Status = :status";
+        $params = ['user_id' => $userId, 'status' => $filterStatus];
     }
 
 // Tik Prioritetas
 } elseif (!empty($filterPriority)) {
     if ($userIsSupport) {
-        $stmtTickets = $conn->prepare("SELECT * FROM tickets WHERE Priority = :priority AND (SupporterID = :user_id OR SupporterID IS NULL) ORDER BY SubmissionTime DESC");
-        $stmtTickets->execute(['priority' => $filterPriority, 'user_id' => $userId]);
+        $sqlConditions = "WHERE Priority = :priority AND (SupporterID = :user_id OR SupporterID IS NULL)";
+        $params = ['priority' => $filterPriority, 'user_id' => $userId];
     } else {
-        $stmtTickets = $conn->prepare("SELECT * FROM tickets WHERE SubmitterID = :user_id AND Priority = :priority ORDER BY SubmissionTime DESC");
-        $stmtTickets->execute(['user_id' => $userId, 'priority' => $filterPriority]);
+        $sqlConditions = "WHERE SubmitterID = :user_id AND Priority = :priority";
+        $params = ['user_id' => $userId, 'priority' => $filterPriority];
     }
 
 // Be filtrų
 } else {
     if ($userIsSupport) {
-        $stmtTickets = $conn->prepare("SELECT * FROM tickets WHERE Status = :status OR (SupporterID = :user_id OR SupporterID IS NULL) ORDER BY SubmissionTime DESC");
-        $stmtTickets->execute([
-            'status' => 'UNCLAIMED',
-            'user_id' => $userId
-            ]);
+        $sqlConditions = "WHERE Status = :status OR (SupporterID = :user_id OR SupporterID IS NULL)";
+        $params = ['status' => 'UNCLAIMED', 'user_id' => $userId];
     } else {
-        $stmtTickets = $conn->prepare("SELECT * FROM tickets WHERE SubmitterID = :user_id ORDER BY SubmissionTime DESC");
-        $stmtTickets->execute(['user_id' => $userId]);
+        $sqlConditions = "WHERE SubmitterID = :user_id";
+        $params = ['user_id' => $userId];
     }
 }
+
+$countStmt = $conn->prepare("SELECT COUNT(*) FROM tickets $sqlConditions");
+$countStmt->execute($params);
+$totalTickets = $countStmt->fetchColumn();
+
+$stmtTickets = $conn->prepare("SELECT * FROM tickets $sqlConditions ORDER BY SubmissionTime DESC LIMIT $listLimit OFFSET $listOffset");
+$stmtTickets->execute($params);
 
 $tickets = $stmtTickets->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 
 <!-- Užklausų lenetlė -->
-<div class="container border p-4 bg-white rounded col-md-6 mt-4">
+<div id="ticketList" class="container border p-4 bg-white rounded col-md-6 mt-4" style="min-width:500px">
     <h3>Užklausų sąrašas</h3>
 
 
@@ -180,11 +193,21 @@ $tickets = $stmtTickets->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 
+<!-- Puslapiavimas -->
+<div>
+<?php CreatePaging($page, $totalTickets, $listLimit);?>
+</div>
+
+
 <!-- Užklausos sąrašas -->
     <ul class="list-group">
 
         <!-- Patikriname, ar yra užklausų -->
-        <?php if (!$tickets) { echo "<p>Nėra užklausų.</p>"; } 
+        <?php if (!$tickets): ?>
+        <div class="alert alert-info text-center">
+            Šiuo metu užklausų nėra.
+        </div>
+        <?php else:
         foreach ($tickets as $ticket):
             $stmtSubmitter = $conn->prepare("SELECT FirstName, LastName FROM users WHERE ID = ?");
             $stmtSubmitter->execute([$ticket['SubmitterID']]);
@@ -194,19 +217,25 @@ $tickets = $stmtTickets->fetchAll(PDO::FETCH_ASSOC);
         ?>
 
             <li class="list-group-item">
-                <h5>
+            
+            <!-- ID, Statusas, Prioritetas ir laikas -->
+            <div class="d-flex justify-content-between align-items-center">  
+                <div>
+                    <span class="badge bg-secondary"><?php echo '#' . str_pad($ticket['ID'], 10, '0', STR_PAD_LEFT); ?></span>
+                    <span class="badge bg-<?php echo $ticket['Priority'] === 'HIGH' || $ticket['Priority'] === 'CRITICAL' ? 'danger' : ($ticket['Priority'] === 'MEDIUM' ? 'warning' : 'success');?>"><?php echo htmlspecialchars($ticket['Priority']); ?></span>
+                    <span class="badge bg-<?php echo $ticket['Status'] === 'SOLVED' ? 'success' : ($ticket['Status'] === 'CLAIMED' ? 'info' : 'secondary');?>"><?php echo htmlspecialchars($ticket['Status']); ?></span>
+                </div>
+                <div>
+                    <small class="text-muted"><?php echo htmlspecialchars($ticket['SubmissionTime']); ?></small>
+                </div>
+            </div><hr>
 
-                    <small class="text-muted"><?php echo '[' . str_pad($ticket['ID'], 10, '0', STR_PAD_LEFT) . '] '; ?></small>
-                        
-                    <?php echo htmlspecialchars($ticket['Title']); ?>
+            <!-- Antraštė ir autorius -->
+            <div class="">
+                <span><?php echo htmlspecialchars($SubmitterFirstName) . " " . htmlspecialchars($SubmitterLastName) . ":"; ?></span><br>
+                <h5><?php echo htmlspecialchars($ticket['Title']); ?></h5>
+            </div>
 
-                </h5>
-
-                <span class="badge bg-<?php echo $ticket['Priority'] === 'HIGH' || $ticket['Priority'] === 'CRITICAL' ? 'danger' : ($ticket['Priority'] === 'MEDIUM' ? 'warning' : 'success'); ?>"><?php echo htmlspecialchars($ticket['Priority']); ?></span><br>
-                <small class="text-muted"><?php echo 'Statusas: ' . htmlspecialchars($ticket['Status']); ?></small><br>
-                <small class="text-muted"><?php echo 'Pateikimo laikas: ' . htmlspecialchars($ticket['SubmissionTime']); ?></small><br>
-                <small class="text-muted"><?php echo 'Autorius: ' . htmlspecialchars($SubmitterFirstName) . " " . htmlspecialchars($SubmitterLastName); ?></small><br>
-                
                 <!-- Peržiūros mygtukas -->
                 <form action="view.php" method="GET" style="display:inline;">
                     <input type="hidden" name="ticketID" value="<?php echo $ticket['ID']; ?>">
@@ -233,14 +262,63 @@ $tickets = $stmtTickets->fetchAll(PDO::FETCH_ASSOC);
 
                 <?php endif; ?>
 
-            </li>
+            </li><br>
 
-        <?php endforeach; ?>
+        <?php endforeach; endif;?>
 
     </ul>
+
+
+<!-- Puslapiavimas -->
+<div>
+<?php CreatePaging($page, $totalTickets, $listLimit);?>
+</div>
 
 
 </div>
 
 </body>
 </html>
+
+
+
+<?php
+// FUNKCIJOS
+
+function CreatePaging($page, $totalTickets, $listLimit) {
+    $totalPages = ceil($totalTickets / $listLimit);
+    if ($totalPages < 1) $totalPages = 1;?>
+
+<form method="GET" action="#ticketList" class="d-flex align-items-center justify-content-center gap-2 my-3">
+        
+        <!-- Statuso filtro išsaugojimas -->
+        <?php if (!empty($filterStatus)) {?><input type="hidden" name="filterStatus" value="<?php echo htmlspecialchars($filterStatus); ?>"><?php }?>
+        <!-- Prioriteto filtro išsaugojimas -->
+        <?php if (!empty($filterPriority)) {?><input type="hidden" name="filterPriority" value="<?php echo htmlspecialchars($filterPriority); ?>"><?php }?>
+
+
+        <!-- Pirmas puslapis -->
+        <?php if ($page - 2 >= 2) {?>
+        <button type="submit" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center" name="page" value="1" <?php if ($page <= 1) {echo 'disabled';}?>>1</button>
+        <span>⇠</span>
+        <?php }?>
+
+        <!-- 2 puslapiai atgal -->
+        <?php for ($i = ($page - 2); $i < $page; $i++) { if ($i > 0) {?>
+        <button type="submit" class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center" name="page" value="<?php echo $i;?>"><?php echo $i;?></button><?php }}?>
+
+        <!-- Dabartinis puslapis -->
+        <span class="btn btn-primary btn-sm d-inline-flex align-items-center justify-content-center"><?php echo $page;?></span>
+
+        <!-- 2 puslapiai į priekį -->
+        <?php for ($i = ($page + 1); $i <= ($page + 2); $i++) { if ($i <= $totalPages) {?>
+        <button type="submit" class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center" name="page" value="<?php echo $i;?>"><?php echo $i;?></button><?php }}?>
+
+        <!-- Paskutinis puslapis -->
+         <?php if ($page + 2 <= $totalPages - 1) {?>
+        <span>⇢</span>
+        <button type="submit" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center" name="page" value="<?php echo $totalPages;?>" <?php if ($page >= $totalPages) {echo 'disabled';}?>><?php echo $totalPages;?></button>
+        <?php }?>
+
+    </form>
+<?php }?>
